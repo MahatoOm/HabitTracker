@@ -6,10 +6,14 @@ app = Flask(__name__)
 
 
 
+
 @app.route("/")
 def home():
 
-    return render_template("index.html")
+    list_item = ["Assignment" , "Work" , "Physical Exercise", "Project1", "Project2" ,"Today's learning", "A good thing", "A bad thing", "Note"]
+
+
+    return render_template("index.html", activities = list_item)
 
 
 

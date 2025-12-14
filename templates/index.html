@@ -1,17 +1,195 @@
-<html>
+<!DOCTYPE html>
+<html lang = "en">
     <head>
+        <meta charset="UTF-8">
         <title>
             Habit Tracker
         </title>
+        <style>
+            table {
+                border-collapse: collapse;
+                width: 100;
+            }
+            th, td {
+                border: 1px solid #444;
+                position:relative;
+            }
+            th {
+                background : #f2f2f2;
+            }
+
+            select, textarea {
+                width:100%;
+                margin-top:4px;
+            }
+            textarea {
+                height : 45px;
+            }
+
+            /* Floating action menu */
+            .cell-menu {
+            display: none;
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #fff;
+            border: 1px solid #aaa;
+            z-index: 10;
+            }
+            .cell-menu button {
+            display: block;
+            width: 100%;
+            border: none;
+            background: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            }
+            .cell-menu button:hover {
+            background: #eee;
+            }
+
+            .nav-controls{
+                display : flex;
+                justify-content:space-between;
+                margin-bottom: 10px;
+            }
+        </style>
     </head>
     <body>
         <h1>
             Habit Tracker
         </h1>
-        <h2>
-            Daily Ledger
-        </h2>
-        
+
+        <div class="nav-controls">
+            <div>
+                <button onclick="changeWeek(-1)"> 👈 Previouos Week</button>
+                <button onclick="changeWeek(1)"> 👉 Next Week</button>
+            </div>
+
+            <div>
+                <button onclick="addDay()">🗽 New Day</button>
+                <button onclick="addWeek()">🗓️ New Week</button>
+            </div>
+        </div>
+
+        <form method="POST" action = "/submitTracker">
+            <table id = "trackerTable">
+                <thead>
+                    <tr id = "dateRow">
+                        <th>Activity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in activities %}
+                    <tr>
+                        <th>{{ activity }}</th>
+                    </tr>
+                    {% endfor %}
+
+                </tbody>
+            </table>
+
+            <br>
+            <button type = "submit" > Save All</button>
+        </form>
+
+        <script>
+            // converting python list to javascript readable format, Json is that bridge
+
+            activities = {{ activities | tojson }};
+            console.log("Activities:", activities);
+
+            const table = document.getElementById("trackerTable");
+            const headerRow = document.getElementById("dateRow");
+            const bodyRows = table.querySelectorAll("tbody tr");
+
+
+            // tracks current time Sun Dec 14 2025 6:38:32 GMT-0600 
+            let startDate = new Date();
+
+            function renderWeek(days = 7) {
+                // clear old colums
+                // headerrow
+                headerRow.innerHTML = "<th>Activity</th>";
+                bodyRows.forEach(r => r.innerHTML = `<th>${r.children[0].textContent}</th>`);
+
+                for (let i = 0; i<days; i++ ){
+                    const date = new Date(startDate);
+                    date.setDate(startDate.getDate() + i);
+
+                    const th = document.createElement("th");
+                    th.textContent = date.toLocaleDateString("en-US", {
+                        Weekday: "short",
+                        day : "2-digit",
+                        month: "short"
+                    });
+                    th.oncclick = () => showMenu(th);
+                    headerRow.appendChild(th);
+
+                    bodyRows.forEach((row, idx) => {
+        const td = document.createElement("td");
+        td.innerHTML = `
+          <select name="status_${activities[idx]}_${i}">
+            <option value="—">✋🏻 No Work</option>
+            <option value="✔">✅ Done</option>
+            <option value="✖">❌ Not Done</option>
+            <option value="~">🤙 Continue</option>
+          </select>
+          <textarea name="note_${activities[idx]}_${i}"></textarea>
+
+          <div class="cell-menu">
+            <button onclick="saveCell(event)">Save</button>
+            <button onclick="updateCell(event)">Update</button>
+            <button onclick="deleteCell(event)">Delete</button>
+          </div>
+        `;
+        td.onclick = (e) => showMenu(td, e);
+        row.appendChild(td);
+      });
+    }
+  }
+
+
+            function showMenu(cell, event){
+                if (event) event.stopPropagation();
+                document.querySelecorAll(".cell-menu").forEach(m => m.style.display = "none");
+                const menu = cell.querySelector(".cell-menu");
+                if (menu) menu.style.display = "block";
+            }
+
+            document.body.onclick = () => {
+                document.querySelectorAll(".cell-menu").forEach(m => m.style.display = "none");                
+            };
+
+            function updateCell(e) {
+                e.stopPropagation();
+                alert("Update cell");
+            }
+
+            function deleteCell(e){
+                e.stopPropagation();
+                const td = e.target.closet("td");
+                td.querySelector("select").value = "-";
+                td.querySelector("textarea").value = "";
+                alert("Delete Cell")
+            }
+
+            function changeWeek(offset) {
+                startDate.setDate(startDate.getDate() + offset *7);
+                renderWeek();
+            }
+
+            function addDay() {
+                renderWeek(headerRow.children.length );
+            }
+
+            function addWeek() {
+                renderWeek(headerRow.children.length + 7)
+            }
+
+            // Initial render
+            renderWeek();
+        </script>
 
     </body>
 </html>
