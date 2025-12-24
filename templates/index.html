@@ -72,7 +72,7 @@
             </div>
         </div>
 
-        <form method="POST" action = "/submitTracker">
+        <form>
             <table id = "trackerTable">
                 <thead>
                     <tr id = "dateRow">
@@ -83,20 +83,22 @@
                     {% for activity in activities %}
                     <tr>
                         <th>{{ activity }}</th>
+                        
                     </tr>
                     {% endfor %}
-
+                    
                 </tbody>
             </table>
 
             <br>
-            <button type = "submit" > Save All</button>
+            <button type = "submit" onclick = saveChanges() > Save All</button>
         </form>
 
         <script>
             // converting python list to javascript readable format, Json is that bridge
 
-            activities = {{ activities | tojson }};
+            activities = JSON.parse('{{ activities | tojson | safe }}');
+            totalweekdata = JSON.parse(' {{ totalweekdata | tojson | safe }}');
             console.log("Activities:", activities);
 
             const table = document.getElementById("trackerTable");
@@ -107,46 +109,145 @@
             // tracks current time Sun Dec 14 2025 6:38:32 GMT-0600 
             let startDate = new Date();
 
+            const changedData = {};
+
+            function markChanged(activity, dayIndex, field, value, day) {
+                if (!changedData[activity]) changedData[activity] = {};
+                if (!changedData[activity][dayIndex]) changedData[activity][dayIndex] = {};
+
+                changedData[activity][dayIndex][field] = value;
+                }
+
+                function saveChanges() {
+                fetch("/submitTracker", {
+                    method: "POST",
+                    headers: {
+                    "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                    start_date: startDate.toISOString().split("T")[0],
+                    changes: changedData
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert("Saved!");
+                    Object.keys(changedData).forEach(k => delete changedData[k]);
+                });
+                }
+
             function renderWeek(days = 7) {
                 // clear old colums
                 // headerrow
                 headerRow.innerHTML = "<th>Activity</th>";
-                bodyRows.forEach(r => r.innerHTML = `<th>${r.children[0].textContent}</th>`);
-
-                for (let i = 0; i<days; i++ ){
+                bodyRows.forEach(row => {
+                    const activityName = row.children[0].textContent;
+                    row.innerHTML = `<th>${activityName}</th>`;
+                });
+                
+                // looping through days
+                for (let i = -3; i<days-3; i++ ){
                     const date = new Date(startDate);
                     date.setDate(startDate.getDate() + i);
 
+                    // Header Cell
                     const th = document.createElement("th");
-                    th.textContent = date.toLocaleDateString("en-US", {
-                        Weekday: "short",
+                    date_for = date.toLocaleDateString("en-US", {
+                        weekday: "short",
                         day : "2-digit",
                         month: "short"
                     });
-                    th.oncclick = () => showMenu(th);
+                    th.textContent = date_for;
+                    th.onclick = () => showMenu(th);
                     headerRow.appendChild(th);
 
-                    bodyRows.forEach((row, idx) => {
-        const td = document.createElement("td");
-        td.innerHTML = `
-          <select name="status_${activities[idx]}_${i}">
-            <option value="—">✋🏻 No Work</option>
-            <option value="✔">✅ Done</option>
-            <option value="✖">❌ Not Done</option>
-            <option value="~">🤙 Continue</option>
-          </select>
-          <textarea name="note_${activities[idx]}_${i}"></textarea>
+            // Body cells
+        bodyRows.forEach((row, idx) => {
 
-          <div class="cell-menu">
-            <button onclick="saveCell(event)">Save</button>
-            <button onclick="updateCell(event)">Update</button>
-            <button onclick="deleteCell(event)">Delete</button>
-          </div>
-        `;
-        td.onclick = (e) => showMenu(td, e);
-        row.appendChild(td);
+
+            const td = document.createElement("td");
+
+            // Adding Listerners event
+            // Select area
+            const select = document.createElement("select");
+            [
+                {v: "-", t:"✋🏻 No Work"},
+                { v: "✔", t: "✅ Done" },
+                { v: "✖", t: "❌ Not Done" },
+                { v: "~", t: "🤙 Continue" }
+            ].forEach(optData => {
+                const opt = document.createElement("option");
+                opt.value = optData.v;
+                opt.textContent = optData.t;
+                select.appendChild(opt);
+            })
+
+            // Text Area
+            const textarea = document.createElement("textarea")
+            // console.log("THis is test log")
+            // console.log(row)
+
+            // status data and note that come from database is managed here
+            // ---- DATABASE DATA INJECTION ----
+            const dayData = totalweekdata[i + 4]; // aligns with backend range
+
+            if (dayData && dayData.habits) {
+                const habitName = activities[idx];
+                const habitData = dayData.habits[habitName];
+                
+                if (habitData) {
+                    console.log(habitData)
+                    // Set select value (NOT appendChild)
+                    select.value = habitData.status || "-";
+
+                    // Set textarea value
+                    textarea.value = habitData.note || "";
+                }
+            }
+            // end of plotting the data from database
+
+            select.onchange = () => {
+            markChanged( activities[idx] , i , "status" , select.value , date)
+            }
+
+            textarea.oninput = () => {
+            markChanged(activities[idx] , i, "note" , textarea.value, date )
+            }
+            
+
+
+            
+
+            // Cell menu
+            const menu = document.createElement("div");
+            menu.className = "cell-menu";
+
+            const saveBtn = document.createElement("button");
+            saveBtn.textContent = "Save";
+            saveBtn.onclick = (e) => saveCell(e);
+
+            const updateBtn = document.createElement("button");
+            updateBtn.textContent = "Update";
+            updateBtn.onclick = (e) => updateCell(e);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Delete";
+            deleteBtn.onclick = (e) => deleteCell(e);
+            
+            menu.append(saveBtn, updateBtn, deleteBtn);
+
+            
+            // Append data to ceach table data cell
+            td.append(select , textarea , menu);
+            td.onclick = (e) => showMenu(td , e);
+            row.appendChild(td);
+        
+
       });
+       
     }
+   
+
   }
 
 
@@ -186,6 +287,9 @@
             function addWeek() {
                 renderWeek(headerRow.children.length + 7)
             }
+
+            
+
 
             // Initial render
             renderWeek();
