@@ -1,16 +1,22 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for , flash
 import jsonify
 from datetime import datetime , timedelta , date
 # System files
 import database as database
+# toast message
+# from flask_toastr import Toastr
+# toastr = Toastr()
+SECRET_Key = "rtghajkrsfljhsklf"
+import time
+
 app = Flask(__name__)
+app.secret_key = "rtghajkrsfljhsklf"
+
 @app.route("/")
-def home():
+def home(username = 'Admin'):
     list_item = ["Assignment" , "Work" , "Physical Exercise", "Project1", "Project2" ,"Today's learning", "A good thing", "A bad thing", "Note"]
-    username = "om"
-
+    
     todays_date = date.today()
-
     totalweek = []
     if database.find_username:
         for i in range(4, -1, -1):
@@ -69,8 +75,36 @@ def upload_data(username , habit, upload_date ,event_date, data):
     print(res , 'sucessfull')
     return 
 
+import user
+key = '000000'
+username = ''
+@app.route('/login' , methods = ['POST', 'GET'])
+def login():
+    if request.method == "POST":
+        username = request.form["Name"]
+        email = request.form['Email']
+        print(username, email)
+        # key = user.userlogin()
+        return render_template("entercode.html")
+    return render_template("login.html")
 
+@app.route('/entercode' , methods = ['POST', 'GET'])
+def code():
+    if request.method == "POST" :
+        userinput = request.form['enteredcode']
+        print(userinput)
+        if userinput == key:
+            print(username)
+            print(key)
+            flash("Account created Sucessfully.")
+            time.sleep()
+            return home(username)
+        else:
+            flash("Input Mismatched Try Again" )
+            return render_template("entercode.html")
+            
 
+    return render_template("entercode.html")
 
 if __name__ == "__main__":
 
