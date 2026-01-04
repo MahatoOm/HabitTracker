@@ -7,6 +7,7 @@ load_dotenv()
 
 
 mongo_URI = os.getenv("MONGODB_URI")
+print(mongo_URI)
 
 
 try:
@@ -26,10 +27,11 @@ except Exception as e:
 db = client.mydb
 collection = db.habit_tracker
 
-def save_habit(username, habit, upload_date ,event_date , data):
+def save_habit(username, email ,habit, upload_date ,event_date , data):
 
     collection.update_one(
         {
+            "email" :email,
             "username": username,
             "habit" : habit,
             "date" : event_date
@@ -49,9 +51,9 @@ def save_habit(username, habit, upload_date ,event_date , data):
     )
     return "Congratulations, for your day."
 
-def find_by_date(username ,date):
+def find_by_date(email ,date):
     data = collection.find({
-        "username" :username,
+        "email" :email,
         "date" : date
     })
 
@@ -87,3 +89,20 @@ def find_username(username):
 
 
 
+collection2 = db.userdata
+
+def add_user(username, email):
+    collection2.update_one({
+        'username' :username,
+        'email':email
+        },
+        {
+            "$set" : {               
+                "login_at" : datetime.utcnow(),
+            },
+            "$setOnInsert": {
+                "created_at": datetime.utcnow()
+            }
+        },
+        upsert = True,
+    )

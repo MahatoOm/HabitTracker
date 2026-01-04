@@ -3,26 +3,28 @@ import smtplib
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 load_dotenv()
-
+from datetime import datetime
 import os
 import random
 
-def userlogin():
+def userlogin(email):
     key  = random.randint(100000, 999999 )
+    time = datetime.utcnow()
+
+    msg = MIMEText(f"HabitTracker login service code : {key} \n This event requested at {time}. \n If you didn't request this code, please email to: \nadmin@ommahato.com ")
+    msg['Subject'] = "HabitTracker Code"
+    msg["From"] = os.getenv("EMAILZOHO")
+    msg["To"] = email
 
 
-    msg = MIMEText(f"Testing mail service code : {key}")
-    msg['Subject'] = "Test email"
-    msg["From"] = os.getenv("EMAIL")
-    msg["To"] = os.getenv("EMAIL_TO")
-
-
-    with smtplib.SMTP("smtp.gmail.com" , 587) as server:
+    with smtplib.SMTP("smtp.zoho.com" , 587) as server:
         server.starttls()
-        server.login(os.getenv("EMAIL"), os.getenv("PW"))
+        server.login(os.getenv("EMAILZOHO"), os.getenv("PWZOHO"))
         server.send_message(msg)
 
     return key
              
 
     
+def key_value(key = 000000):
+    return key

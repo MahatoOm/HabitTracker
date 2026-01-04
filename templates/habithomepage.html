@@ -25,6 +25,7 @@
             textarea {
                 height : 45px;
             }
+            
 
             /* Floating action menu */
             .cell-menu {
@@ -53,12 +54,43 @@
                 justify-content:space-between;
                 margin-bottom: 10px;
             }
+            .head-controls{
+                display : flex;
+                justify-content:space-between;
+                margin-bottom: 10px;
+                margin-left: 20px;
+                margin-right:20px;
+            }
+            .login{
+                margin:100px;
+            }
+            head-admin{
+                display: grid;
+            }
         </style>
+        <script src="code.jquery.com"></script>
+
     </head>
     <body>
-        <h1>
+        <div class = "head-controls">  
+        <div>
+            <h1>
             Habit Tracker
         </h1>
+        </div>
+        <div id = head-admin>
+            <form action = '/login'>
+            
+            <h3>Hi, {{ username }} </h3>
+            <h5>{{ email }}</h5>
+            <button  id  = 'actionlogin ' name = 'actionlogin' >Login</button>
+            <p>Status: <span id="statusMessage">Waiting...</span></p>
+            </form>
+        
+        
+        </div>      
+        
+        </div>
 
         <div class="nav-controls">
             <div>
@@ -118,7 +150,7 @@
                 changedData[activity][dayIndex][field] = value;
                 }
 
-                function saveChanges() {
+            function saveChanges() {
                 fetch("/submitTracker", {
                     method: "POST",
                     headers: {
@@ -207,6 +239,7 @@
             // end of plotting the data from database
 
             select.onchange = () => {
+            console.log(activities[idx] , i , "status" , select.value , date)
             markChanged( activities[idx] , i , "status" , select.value , date)
             }
 
@@ -253,7 +286,7 @@
 
             function showMenu(cell, event){
                 if (event) event.stopPropagation();
-                document.querySelecorAll(".cell-menu").forEach(m => m.style.display = "none");
+                document.querySelectorAll(".cell-menu").forEach(m => m.style.display = "none");
                 const menu = cell.querySelector(".cell-menu");
                 if (menu) menu.style.display = "block";
             }
@@ -289,10 +322,12 @@
             }
 
             
-
-
             // Initial render
             renderWeek();
+
+
+            
+        
         </script>
 
     </body>
